@@ -15,23 +15,44 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Find and Build APK
+      - name: Auto-Repair Project Structure
         run: |
-          # البحث عن المجلد الذي يحتوي على ملف build.gradle
-          PROJECT_ROOT=$(find . -name "build.gradle" -exec dirname {} \; | head -n 1)
-          echo "تم العثور على المشروع في: $PROJECT_ROOT"
-          cd "$PROJECT_ROOT"
-          
-          # إنشاء ملفات الجرادل إذا كانت ناقصة
+          # 1. البحث عن المجلد الذي يحتوي على الكود الفعلي (java أو kotlin)
+          APP_DIR=$(find . -name "src" -type d -exec dirname {} \; | head -n 1)
+          if [ -z "$APP_DIR" ]; then APP_DIR="./app"; fi
+          echo "تم تحديد مجلد التطبيق: $APP_DIR"
+
+          # 2. إنشاء ملف settings.gradle في الجذر إذا كان ناقصاً
+          if [ ! -f "settings.gradle" ]; then
+            echo "include ':app'" > settings.gradle
+            echo "rootProject.name='SecretVault'" >> settings.gradle
+          fi
+
+          # 3. إصلاح ملف build.gradle الرئيسي (إضافة الإصدارات الناقصة)
+          cat <<EOT > build.gradle
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+          }
+          allprojects {
+              repositories { google(); mavenCentral() }
+          }
+          EOT
+
+          # 4. إصلاح ملف app/build.gradle للتأكد من وجود الإصدارات
+          if [ -f "$APP_DIR/build.gradle" ]; then
+            sed -i 's/id .com.android.application./id "com.android.application" version "8.2.2" apply false/g' "$APP_DIR/build.gradle"
+          fi
+
+      - name: Generate Wrapper and Build
+        run: |
           gradle wrapper
           chmod +x gradlew
-          
-          # بدء عملية بناء التطبيق
           ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          # البحث عن ملف الـ APK الناتج ورفعه
+          path: "**/build/outputs/apk/debug/*.apk"
           path: "**/build/outputs/apk/debug/app-debug.apk"
