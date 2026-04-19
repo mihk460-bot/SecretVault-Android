@@ -15,25 +15,21 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Auto-Repair Project Structure
+      - name: Repair and Build
         run: |
-          # 1. البحث عن المجلد الذي يحتوي على الكود الفعلي (java أو kotlin)
-          APP_DIR=$(find . -name "src" -type d -exec dirname {} \; | head -n 1)
-          if [ -z "$APP_DIR" ]; then APP_DIR="./app"; fi
-          echo "تم تحديد مجلد التطبيق: $APP_DIR"
+          # إصلاح الملفات الأساسية إذا كانت ناقصة
+          if [ ! -f "settings.gradle" ]; then echo "include ':app'" > settings.gradle; fi
+          
+          # بناء التطبيق
+          gradle wrapper
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
 
-          # 2. إنشاء ملف settings.gradle في الجذر إذا كان ناقصاً
-          if [ ! -f "settings.gradle" ]; then
-            echo "include ':app'" > settings.gradle
-            echo "rootProject.name='SecretVault'" >> settings.gradle
-          fi
-
-          # 3. إصلاح ملف build.gradle الرئيسي (إضافة الإصدارات الناقصة)
-          cat <<EOT > build.gradle
-          buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
-          }
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: "**/build/outputs/apk/debug/*.apk"
           allprojects {
               repositories { google(); mavenCentral() }
           }
