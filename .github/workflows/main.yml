@@ -1,6 +1,5 @@
-name: Global Build
+name: Debug Build
 on: [push]
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,21 +10,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Auto-Locate and Build
+      - name: Hard Reset and Build
         run: |
-          # البحث عن مكان ملف البناء الفعلي
-          GRADLE_PATH=$(find . -name "build.gradle" | head -n 1)
-          PROJECT_ROOT=$(dirname "$GRADLE_PATH")
-          echo "Found project at: $PROJECT_ROOT"
-          cd "$PROJECT_ROOT"
+          # البحث عن المجلد الذي يحتوي على src
+          ROOT=$(find . -name "src" -type d -exec dirname {} \; | head -n 1)
+          cd "$ROOT"
           
-          # إجبار النظام على إنشاء ملفات التشغيل
+          # حذف أي إعدادات قديمة وصناعة إعدادات جديدة
+          rm -f settings.gradle
+          echo "include ':app'" > settings.gradle
+          
+          # تحميل الجرادل وبدء البناء مع إظهار التفاصيل المملة للأخطاء
           gradle wrapper --gradle-version 8.2
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-
-      - name: Export
-        uses: actions/upload-artifact@v4
-        with:
-          name: App-Ready
-          path: "**/*.apk"
+          ./gradlew assembleDebug --stacktrace --info
