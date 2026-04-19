@@ -1,0 +1,4 @@
+-keep class androidx.security.crypto.** { *; }
+-keep class com.example.secretvault.** { *; }
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
