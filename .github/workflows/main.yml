@@ -1,4 +1,4 @@
-name: Build APK
+name: Final Build APK
 on: [push]
 
 jobs:
@@ -8,27 +8,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build
+      - name: Force Build
         run: |
-          # الدخول للمجلد الذي يحتوي على الكود
-          cd SecretVault-Android
+          # 1. البحث عن أي مجلد يحتوي على كود برمج جافا أو كوتلن
+          ROOT_DIR=$(find . -name "src" -type d -exec dirname {} \; | head -n 1)
+          if [ -z "$ROOT_DIR" ]; then ROOT_DIR="."; fi
+          cd "$ROOT_DIR"
           
-          # التأكد من وجود ملف الإعدادات
-          if [ ! -f "settings.gradle" ]; then echo "include ':app'" > settings.gradle; fi
+          # 2. صناعة ملفات النظام يدوياً لتجاوز أي نقص
+          echo "include ':app'" > settings.gradle
+          echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
           
-          # بناء الملفات الضرورية والبدء
-          gradle wrapper
+          # 3. تحديث الجرادل بالقوة
+          gradle wrapper --gradle-version 8.2.2
           chmod +x gradlew
-          ./gradlew assembleDebug
+          
+          # 4. بناء التطبيق مع تجاهل الأخطاء غير القاتلة
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Done
+      - name: Deliver APK
         uses: actions/upload-artifact@v4
         with:
-          name: AppFile
+          name: FinalApp
           path: "**/*.apk"
