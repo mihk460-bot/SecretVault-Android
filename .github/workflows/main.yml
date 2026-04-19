@@ -1,39 +1,34 @@
-name: Ultimate Build APK
+name: Build APK
 on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build with Gradle
+      - name: Build
         run: |
-          # الدخول إلى المجلد الذي يحتوي على الكود
-          cd SecretVault-Android
+          # الدخول لأعمق نقطة في المجلدات للوصول للكود
+          cd SecretVault-Android/SecretVault-Android 
           
-          # إنشاء ملف settings.gradle لربط المكونات
+          # إنشاء ملفات الإعدادات آلياً
           echo "include ':app'" > settings.gradle
-          
-          # إنشاء ملفات الجرادل الأساسية
           gradle wrapper --gradle-version 8.2
           chmod +x gradlew
-          
-          # محاولة بناء التطبيق وتجاهل التحذيرات غير القاتلة
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug
 
-      - name: Upload APK
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: SecretVault-App
-          path: "**/build/outputs/apk/debug/*.apk"
-        with:
+          name: App-Package
+          path: "**/*.apk"
+     with:
           name: FinalApp
           path: "**/*.apk"
