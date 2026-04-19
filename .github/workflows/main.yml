@@ -16,7 +16,13 @@ jobs:
 
       - name: Build
         run: |
+          # الدخول للمجلد الذي يحتوي على الكود
+          cd SecretVault-Android
+          
+          # التأكد من وجود ملف الإعدادات
           if [ ! -f "settings.gradle" ]; then echo "include ':app'" > settings.gradle; fi
+          
+          # بناء الملفات الضرورية والبدء
           gradle wrapper
           chmod +x gradlew
           ./gradlew assembleDebug
